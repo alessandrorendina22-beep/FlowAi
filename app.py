@@ -26,6 +26,18 @@ if 'xml_generato' not in st.session_state:
 if 'mermaid_code' not in st.session_state:
     st.session_state['mermaid_code'] = None
 
+# Funzione per pulire le stringhe ed evitare che Mermaid si rompa con i caratteri speciali
+def pulisci_per_mermaid(testo):
+    if not testo:
+        return ""
+    # Rimuoviamo virgolette esterne o interne ed entità speciali che rompono Mermaid
+    testo = testo.replace("&quot;", "").replace('"', "").replace("'", "")
+    testo = testo.replace("&amp;", " & ")
+    testo = testo.replace("<", "lt").replace(">", "gt")
+    # Sostituiamo caratteri parentesi quadre o graffe se presenti
+    testo = testo.replace("[", "(").replace("]", ")").replace("{", "(").replace("}", ")")
+    return testo.strip()
+
 # Funzione per convertire l'XML di Flowgorithm in un diagramma Mermaid per cellulare
 def converti_xml_a_mermaid(xml_text):
     try:
@@ -35,6 +47,10 @@ def converti_xml_a_mermaid(xml_text):
         
         root = ET.fromstring(xml_text)
         main_function = root.find(".//function[@name='Main']")
+        if main_function is None:
+            # Se non trova Main, proviamo a cercare una qualsiasi funzione
+            main_function = root.find(".//function")
+            
         if main_function is None:
             return None
             
@@ -63,21 +79,24 @@ def converti_xml_a_mermaid(xml_text):
                     current_id = f"n{nodo_id}"
                     name = child.get("name", "")
                     tipo = child.get("type", "Integer")
-                    linee.append(f'{ultimo_id} --> {current_id}["Dichiara {tipo} {name}"]:::dichiarazione')
+                    testo_pulito = pulisci_per_mermaid(f"Dichiara {tipo} {name}")
+                    linee.append(f'{ultimo_id} --> {current_id}["{testo_pulito}"]:::dichiarazione')
                     ultimo_id = current_id
                     
                 elif tag == "input":
                     nodo_id += 1
                     current_id = f"n{nodo_id}"
                     var = child.get("variable", "")
-                    linee.append(f'{ultimo_id} --> {current_id}[/"Leggi {var}"/]:::inputOutput')
+                    testo_pulito = pulisci_per_mermaid(f"Leggi {var}")
+                    linee.append(f'{ultimo_id} --> {current_id}[/"{testo_pulito}"/]:::inputOutput')
                     ultimo_id = current_id
                     
                 elif tag == "output":
                     nodo_id += 1
                     current_id = f"n{nodo_id}"
-                    expr = child.get("expression", "").replace("&quot;", '"').replace("&amp;", "&")
-                    linee.append(f'{ultimo_id} --> {current_id}[\\"Scrivi {expr}\\"/]:::inputOutput')
+                    expr = child.get("expression", "")
+                    testo_pulito = pulisci_per_mermaid(f"Scrivi: {expr}")
+                    linee.append(f'{ultimo_id} --> {current_id}[\\"{testo_pulito}\\"/]:::inputOutput')
                     ultimo_id = current_id
                     
                 elif tag == "assign":
@@ -85,14 +104,16 @@ def converti_xml_a_mermaid(xml_text):
                     current_id = f"n{nodo_id}"
                     var = child.get("variable", "")
                     expr = child.get("expression", "")
-                    linee.append(f'{ultimo_id} --> {current_id}["{var} = {expr}"]:::azione')
+                    testo_pulito = pulisci_per_mermaid(f"{var} = {expr}")
+                    linee.append(f'{ultimo_id} --> {current_id}["{testo_pulito}"]:::azione')
                     ultimo_id = current_id
 
                 elif tag == "if":
                     nodo_id += 1
                     cond_id = f"n{nodo_id}"
                     expr = child.get("expression", "")
-                    linee.append(f'{ultimo_id} --> {cond_id}{{"Se {expr}"}}:::decisione')
+                    testo_pulito = pulisci_per_mermaid(f"Se {expr}")
+                    linee.append(f'{ultimo_id} --> {cond_id}{{\"{testo_pulito}\"}}:::decisione')
                     
                     # Ramo Then (Vero)
                     then_element = child.find("then")
@@ -217,3 +238,5 @@ if st.session_state['xml_generato']:
     
     with st.expander("🔍 Guarda il codice XML"):
         st.code(st.session_state['xml_generato'], language="xml")
+
+
