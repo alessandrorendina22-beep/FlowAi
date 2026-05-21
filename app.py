@@ -1,14 +1,20 @@
-
+```python
 import streamlit as st
 from huggingface_hub import InferenceClient
 
 # --- CONFIGURAZIONE ---
+# Recuperiamo il token in modo sicuro dai Secrets di Streamlit Cloud.
+# In questo modo su GitHub non c'è nessuna chiave visibile!
 if "HF_TOKEN" in st.secrets:
     HF_TOKEN = st.secrets["HF_TOKEN"]
 else:
-    HF_TOKEN = "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"
+    HF_TOKEN = ""
 
-client = InferenceClient(model="Qwen/Qwen2.5-72B-Instruct", token=HF_TOKEN)
+# Se il token è configurato, inizializziamo il client
+if HF_TOKEN:
+    client = InferenceClient(model="Qwen/Qwen2.5-72B-Instruct", token=HF_TOKEN)
+else:
+    client = None
 
 # Ottimizzazione per Mobile
 st.set_page_config(page_title="FlowAI Mobile", page_icon="📱", layout="centered")
@@ -22,7 +28,9 @@ if 'xml_generato' not in st.session_state:
 user_input = st.text_area("Cosa deve fare l'algoritmo?", placeholder="Es: Chiedi un numero e vedi se è pari", height=150)
 
 if st.button("🚀 GENERA SCHEMA", use_container_width=True):
-    if user_input:
+    if not HF_TOKEN:
+        st.error("Errore: Token di Hugging Face mancante. Vai nelle impostazioni (Secrets) di Streamlit Cloud e inserisci il tuo HF_TOKEN.")
+    elif user_input:
         with st.spinner("L'IA sta disegnando lo schema..."):
             try:
                 prompt = f"""Genera il codice XML sorgente per Flowgorithm (.fprg) versione 4.2.
@@ -86,3 +94,4 @@ if st.session_state['xml_generato']:
     with st.expander("🔍 Guarda l'anteprima"):
         st.code(st.session_state['xml_generato'], language="xml")
 
+```
