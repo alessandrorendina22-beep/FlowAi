@@ -86,4 +86,3 @@ if st.session_state['xml_generato']:
     with st.expander("🔍 Guarda l'anteprima"):
         st.code(st.session_state['xml_generato'], language="xml")
 
-```
