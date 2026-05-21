@@ -1,12 +1,11 @@
- import streamlit as st
+
+import streamlit as st
 from huggingface_hub import InferenceClient
 
 # --- CONFIGURAZIONE ---
-# Recuperiamo il token in modo sicuro dai Secrets di Streamlit Cloud
 if "HF_TOKEN" in st.secrets:
     HF_TOKEN = st.secrets["HF_TOKEN"]
 else:
-    # Fallback per i test locali
     HF_TOKEN = "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"
 
 client = InferenceClient(model="Qwen/Qwen2.5-72B-Instruct", token=HF_TOKEN)
@@ -66,7 +65,7 @@ if st.button("🚀 GENERA SCHEMA", use_container_width=True):
                     xml_data = xml_data[xml_data.find("<?xml"):]
                 
                 st.session_state['xml_generato'] = xml_data
-                st.balloons() # Animazione carina!
+                st.balloons() # Animazione!
                 
             except Exception as e:
                 st.error(f"Errore tecnico: {e}")
@@ -86,3 +85,5 @@ if st.session_state['xml_generato']:
     
     with st.expander("🔍 Guarda l'anteprima"):
         st.code(st.session_state['xml_generato'], language="xml")
+
+```
